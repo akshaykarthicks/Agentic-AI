@@ -34,9 +34,16 @@ This app uses **Google Gemini (via OpenAI-compatible endpoint)** to power a chat
 - ✅ **Environment-configured secrets** using `.env`
 
 ---
+---
+📁 project-root/
+│   ├── app.py                   # Main Python app with Gradio interface
+│   ├── README.md                # Project README (this file)
+│   └── 📁 me/
+│       ├── Akshaykarthick_s.pdf  # Your resume (used for chatbot context)
+│       └── summary.txt           # Text summary of your background
+├── .env                        # Environment variables (NOT to be pushed to Git)
 
-## Make sure to create a `.env` file at the root of your project:
-
+---
 ```env
 HF_TOKEN=hf_...
 GOOGLE_API_KEY=your_gemini_api_key
