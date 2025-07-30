@@ -1,4 +1,4 @@
-# 🤖 Personal AI Career Assistant — Akshaykarthick
+<img width="889" height="213" alt="{71E15DA9-0FEC-43F6-AAFF-72305F5A7676}" src="https://github.com/user-attachments/assets/2873926b-5838-4e54-9fba-7aeed8eb0487" /># 🤖 Personal AI Career Assistant — Akshaykarthick
 
 Welcome to my AI-powered personal assistant, built using **Gradio**, **Gemini API**, and **Pushover** for real-time notifications. This assistant is designed to simulate a professional conversation with me — Akshaykarthick — about my **career**, **background**, **projects**, and **skills**.
 
@@ -34,7 +34,7 @@ This app uses **Google Gemini (via OpenAI-compatible endpoint)** to power a chat
 - ✅ **Environment-configured secrets** using `.env`
 
 ---
----
+```
 📁 project-root/
 │   ├── app.py                   # Main Python app with Gradio interface
 │   ├── README.md                # Project README (this file)
@@ -43,6 +43,7 @@ This app uses **Google Gemini (via OpenAI-compatible endpoint)** to power a chat
 │       └── summary.txt           # Text summary of your background
 ├── .env                        # Environment variables (NOT to be pushed to Git)
 
+```
 ---
 ```env
 HF_TOKEN=hf_...
@@ -50,3 +51,4 @@ GOOGLE_API_KEY=your_gemini_api_key
 OPENAI_API_KEY=your_openai_key  # optional for fallback
 PUSHOVER_TOKEN=your_pushover_app_token
 PUSHOVER_USER=your_pushover_user_key
+
