@@ -1,4 +1,4 @@
-<img width="889" height="213" alt="{71E15DA9-0FEC-43F6-AAFF-72305F5A7676}" src="https://github.com/user-attachments/assets/2873926b-5838-4e54-9fba-7aeed8eb0487" /># 🤖 Personal AI Career Assistant — Akshaykarthick
+
 
 Welcome to my AI-powered personal assistant, built using **Gradio**, **Gemini API**, and **Pushover** for real-time notifications. This assistant is designed to simulate a professional conversation with me — Akshaykarthick — about my **career**, **background**, **projects**, and **skills**.
 
