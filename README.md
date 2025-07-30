@@ -1,20 +1,45 @@
----
-title: personal-ai-agent
-emoji: 🤖
-colorFrom: blue
-colorTo: red
-sdk: gradio
-sdk_version: 4.31.0
-app_file: app2.py
-pinned: false
+# 🤖 Personal AI Career Assistant — Akshaykarthick
+
+Welcome to my AI-powered personal assistant, built using **Gradio**, **Gemini API**, and **Pushover** for real-time notifications. This assistant is designed to simulate a professional conversation with me — Akshaykarthick — about my **career**, **background**, **projects**, and **skills**.
+
 ---
 
-# Personal AI Agent
+## 🚀 Live Demo
 
-This is an AI chatbot that acts as a personal representative, using background summary and LinkedIn profile to answer questions about career, skills, and experience.
+🔗 [Launch the App](https://huggingface.co/spaces/AKS1432/personal-ai-agent)
+<img width="1709" height="958" alt="image" src="https://github.com/user-attachments/assets/6e461822-3ad2-4215-8436-d2b10e644183" />
 
-## Features
-- Interactive chat interface
-- Records user contact details
-- Tracks unknown questions for improvement
-- Professional career consultation
+
+
+
+---
+
+## 🧠 About This Project
+
+This app uses **Google Gemini (via OpenAI-compatible endpoint)** to power a chatbot that acts as a virtual version of me. It's ideal for potential clients, employers, or collaborators who want to:
+
+- Learn about my background and expertise  
+- Discover my projects and experiences  
+- Leave their email and get in touch  
+- Ask career-related questions
+
+---
+
+## 💼 Features
+
+- ✅ **Personalized context** from `summary.txt` and resume (`me/Akshaykarthick_s.pdf`)
+- ✅ **Gradio ChatInterface** for a clean and interactive UI
+- ✅ **Tool use detection** (e.g., record email or unknown question)
+- ✅ **Real-time notifications** via **Pushover**
+- ✅ **Environment-configured secrets** using `.env`
+
+---
+
+## Make sure to create a `.env` file at the root of your project:
+
+```env
+HF_TOKEN=hf_...
+GOOGLE_API_KEY=your_gemini_api_key
+OPENAI_API_KEY=your_openai_key  # optional for fallback
+PUSHOVER_TOKEN=your_pushover_app_token
+PUSHOVER_USER=your_pushover_user_key
