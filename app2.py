@@ -6,16 +6,17 @@ import requests
 from pypdf import PdfReader
 import gradio as gr
 
-
+# Load environment variables
 load_dotenv(override=True)
 
+# Initialize OpenAI-compatible client (e.g., Gemini)
 api_key = os.getenv("GOOGLE_API_KEY", "").strip()
 gemini = OpenAI(
-    api_key=api_key, 
+    api_key=api_key,
     base_url="https://generativelanguage.googleapis.com/v1beta/openai/"
 )
 
-
+# --- Pushover Notification Helpers ---
 def push(text):
     token = os.getenv("PUSHOVER_TOKEN", "").strip()
     user = os.getenv("PUSHOVER_USER", "").strip()
@@ -25,45 +26,32 @@ def push(text):
     try:
         response = requests.post(
             "https://api.pushover.net/1/messages.json",
-            data={
-                "token": token,
-                "user": user,
-                "message": text,
-            }
+            data={"token": token, "user": user, "message": text}
         )
         print("Pushover response:", response.status_code, response.text)
         response.raise_for_status()
     except Exception as e:
         print("Error sending Pushover notification:", e)
 
-
-
+# --- Tool Functions ---
 def record_user_details(email, name="Name not provided", notes="not provided"):
     push(f"Recording interest from {name} with email {email} and notes {notes}")
     return {"recorded": "ok"}
 
 def record_unknown_question(question):
-    push(f"Recording {question} asked that I couldn't answer")
+    push(f"Recording unknown question: {question}")
     return {"recorded": "ok"}
 
+# --- JSON Tool Descriptions for Gemini ---
 record_user_details_json = {
     "name": "record_user_details",
-    "description": "Use this tool to record that a user is interested in being in touch and provided an email address",
+    "description": "Record a user's email and interest.",
     "parameters": {
         "type": "object",
         "properties": {
-            "email": {
-                "type": "string",
-                "description": "The email address of this user"
-            },
-            "name": {
-                "type": "string",
-                "description": "The user's name, if they provided it"
-            },
-            "notes": {
-                "type": "string",
-                "description": "Any additional information about the conversation that's worth recording to give context"
-            }
+            "email": {"type": "string", "description": "User's email address"},
+            "name": {"type": "string", "description": "User's name"},
+            "notes": {"type": "string", "description": "Additional context"}
         },
         "required": ["email"],
         "additionalProperties": False
@@ -72,24 +60,23 @@ record_user_details_json = {
 
 record_unknown_question_json = {
     "name": "record_unknown_question",
-    "description": "Always use this tool to record any question that couldn't be answered as you didn't know the answer",
+    "description": "Log a question the assistant couldn't answer.",
     "parameters": {
         "type": "object",
         "properties": {
-            "question": {
-                "type": "string",
-                "description": "The question that couldn't be answered"
-            },
+            "question": {"type": "string", "description": "The unanswered question"}
         },
         "required": ["question"],
         "additionalProperties": False
     }
 }
 
-tools = [{"type": "function", "function": record_user_details_json},
-        {"type": "function", "function": record_unknown_question_json}]
+tools = [
+    {"type": "function", "function": record_user_details_json},
+    {"type": "function", "function": record_unknown_question_json}
+]
 
-
+# --- Handle Tool Calls ---
 def handle_tool_calls(tool_calls):
     results = []
     for tool_call in tool_calls:
@@ -98,11 +85,14 @@ def handle_tool_calls(tool_calls):
         print(f"Tool called: {tool_name}", flush=True)
         tool = globals().get(tool_name)
         result = tool(**arguments) if tool else {}
-        results.append({"role": "tool","content": json.dumps(result),"tool_call_id": tool_call.id})
+        results.append({
+            "role": "tool",
+            "content": json.dumps(result),
+            "tool_call_id": tool_call.id
+        })
     return results
 
-
-# Load personal data
+# --- Load Resume and Summary ---
 reader = PdfReader("me/Akshaykarthick_s.pdf")
 linkedin = ""
 for page in reader.pages:
@@ -115,56 +105,68 @@ with open("me/summary.txt", "r", encoding="utf-8") as f:
 
 name = "Akshaykarthick"
 
-system_prompt = f"You are acting as {name}. You are answering questions on {name}'s website, \
-particularly questions related to {name}'s career, background, skills and experience. \
-Your responsibility is to represent {name} for interactions on the website as faithfully as possible. \
-You are given a summary of {name}'s background and LinkedIn profile which you can use to answer questions. \
-Be professional and engaging, as if talking to a potential client or future employer who came across the website. \
-If you don't know the answer to any question, use your record_unknown_question tool to record the question that you couldn't answer, even if it's about something trivial or unrelated to career. \
-If the user is engaging in discussion, try to steer them towards getting in touch via email; ask for their email and record it using your record_user_details tool. "
+# --- System Prompt Construction ---
+system_prompt = f"""You are acting as {name}. You are answering questions on {name}'s website,
+particularly questions related to {name}'s career, background, skills and experience.
+Your responsibility is to represent {name} professionally and helpfully to users of the site.
+If you don’t know the answer, log it using the record_unknown_question tool.
+If the user shows interest, ask for their email and record it with record_user_details.
 
-system_prompt += f"\n\n## Summary:\n{summary}\n\n## LinkedIn Profile:\n{linkedin}\n\n"
-system_prompt += f"With this context, please chat with the user, always staying in character as {name}."
+## Summary:
+{summary}
 
+## LinkedIn Profile:
+{linkedin}
 
+Please stay in character and assist the user.
+"""
+
+# --- Chat Logic ---
 def chat(message, history):
-    # Convert history to the correct format for Google API
-    messages = []
+    messages = [{"role": "system", "content": system_prompt}]
     
-    # Add system prompt as first message
-    messages.append({"role": "system", "content": system_prompt})
+    # Add history safely
+    for pair in history:
+        if isinstance(pair, list) and len(pair) == 2:
+            user_msg, ai_msg = pair
+            messages.append({"role": "user", "content": user_msg})
+            messages.append({"role": "assistant", "content": ai_msg})
     
-    # Add conversation history
-    messages.extend(history)
-    
-    # Add current user message
+    # Add current message
     messages.append({"role": "user", "content": message})
-    
-    # Debug: Print the message format
-    print("DEBUG - Message format:")
+
+    # Debug print
+    print("DEBUG - Messages for API call:")
     for i, msg in enumerate(messages):
-        print(f"  [{i}] {msg['role']}: {msg['content'][:50]}...")
-    
-    done = False
-    while not done:
-        response = gemini.chat.completions.create(model="gemini-1.5-flash", messages=messages, tool_choice="auto", tools=tools)
-        finish_reason = response.choices[0].finish_reason
-        
-        if finish_reason=="tool_calls":
-            message = response.choices[0].message
-            tool_calls = message.tool_calls
-            results = handle_tool_calls(tool_calls)
-            messages.append(message)
-            messages.extend(results)
+        try:
+            print(f"  [{i}] {msg['role']}: {msg['content'][:50]}...")
+        except Exception as e:
+            print(f"  [{i}] Unreadable message: {msg}")
+
+    # Main loop to handle tool calls
+    while True:
+        response = gemini.chat.completions.create(
+            model="gemini-1.5-flash",
+            messages=messages,
+            tool_choice="auto",
+            tools=tools
+        )
+        choice = response.choices[0]
+        if choice.finish_reason == "tool_calls":
+            tool_calls = choice.message.tool_calls
+            messages.append(choice.message)
+            tool_results = handle_tool_calls(tool_calls)
+            messages.extend(tool_results)
         else:
-            done = True
+            break
+
     return response.choices[0].message.content
 
-
+# --- Gradio UI ---
 if __name__ == "__main__":
     interface = gr.ChatInterface(
-        chat, 
-        title="Personal AI Agent",
-        description="Chat with my AI representative to learn about my background, skills, and experience."
+        fn=chat,
+        title="Akshaykarthick’s AI Agent",
+        description="Ask me anything about my career, background, skills, or experience. If you'd like to connect, drop your email!"
     )
     interface.launch(share=True)
