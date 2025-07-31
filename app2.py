@@ -8,7 +8,7 @@ import gradio as gr
 
 
 load_dotenv(override=True)
-# Clean the API key by removing any whitespace/newlines
+
 api_key = os.getenv("GOOGLE_API_KEY", "").strip()
 gemini = OpenAI(
     api_key=api_key, 
@@ -17,14 +17,25 @@ gemini = OpenAI(
 
 
 def push(text):
-    requests.post(
-        "https://api.pushover.net/1/messages.json",
-        data={
-            "token": os.getenv("PUSHOVER_TOKEN"),
-            "user": os.getenv("PUSHOVER_USER"),
-            "message": text,
-        }
-    )
+    token = os.getenv("PUSHOVER_TOKEN", "").strip()
+    user = os.getenv("PUSHOVER_USER", "").strip()
+    if not token or not user:
+        print("Pushover token or user key is missing!")
+        return
+    try:
+        response = requests.post(
+            "https://api.pushover.net/1/messages.json",
+            data={
+                "token": token,
+                "user": user,
+                "message": text,
+            }
+        )
+        print("Pushover response:", response.status_code, response.text)
+        response.raise_for_status()
+    except Exception as e:
+        print("Error sending Pushover notification:", e)
+
 
 
 def record_user_details(email, name="Name not provided", notes="not provided"):
@@ -123,10 +134,8 @@ def chat(message, history):
     # Add system prompt as first message
     messages.append({"role": "system", "content": system_prompt})
     
-    # Add conversation history - Gradio history is a list of [user_msg, assistant_msg] pairs
-    for user_msg, assistant_msg in history:
-        messages.append({"role": "user", "content": user_msg})
-        messages.append({"role": "assistant", "content": assistant_msg})
+    # Add conversation history
+    messages.extend(history)
     
     # Add current user message
     messages.append({"role": "user", "content": message})
@@ -138,7 +147,7 @@ def chat(message, history):
     
     done = False
     while not done:
-        response = gemini.beta.chat.completions.parse(model="gemini-2.0-flash", messages=messages)
+        response = gemini.chat.completions.create(model="gemini-1.5-flash", messages=messages, tool_choice="auto", tools=tools)
         finish_reason = response.choices[0].finish_reason
         
         if finish_reason=="tool_calls":
@@ -158,4 +167,4 @@ if __name__ == "__main__":
         title="Personal AI Agent",
         description="Chat with my AI representative to learn about my background, skills, and experience."
     )
-    interface.launch(share=True) 
+    interface.launch(share=True)
